@@ -370,7 +370,7 @@ metadata:
 `
 
 const defaultHorizontalPodAutoscaler = `{{- if .Values.autoscaling.enabled }}
-apiVersion: autoscaling/v2beta1
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "<CHARTNAME>.fullname" . }}
