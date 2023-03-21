@@ -586,6 +586,11 @@ func Create(name, dir string) (string, error) {
 		return cdir, errors.Errorf("file %s already exists and is not a directory", cdir)
 	}
 
+	// Note: For newly introduced manifests in `helm create` that are disabled
+	// by default in values.yaml (similar to hpa and ingress), add the
+	// enabling condition in TestHelmCreateChart_CheckDeprecatedWarnings
+	// of pkg/lint/lint_test.go file. This can help in avoiding the
+	// creation of manifest with deprecated version of object.
 	files := []struct {
 		path    string
 		content []byte

@@ -105,6 +105,11 @@ test-unit:
 	@echo
 	@echo "==> Running unit tests <=="
 	GO111MODULE=on go test $(GOFLAGS) -run $(TESTS) $(PKG) $(TESTFLAGS)
+	@echo
+	@# Separate run to avoid ldflags used to test deprecation from conflicting with other tests.
+	@# This test without ldflags passes with a false positive result to run with coverage tests.
+	GO111MODULE=on go test $(GOFLAGS) -run ^TestHelmCreateChart_CheckDeprecatedWarnings$$ ./pkg/lint/ $(TESTFLAGS) -ldflags '$(LDFLAGS)'
+
 
 .PHONY: test-coverage
 test-coverage:

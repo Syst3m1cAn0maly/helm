@@ -140,6 +140,49 @@ func TestHelmCreateChart(t *testing.T) {
 	}
 }
 
+// TestHelmCreateChart_CheckDeprecatedWarnings checks if any default
+// manifests created by `helm create` throw deprecated warnings
+// when running `helm lint`.
+//
+// See https://github.com/helm/helm/issues/11495
+//
+// Resources like hpa, ingress, etc., which are disabled by default
+// in values.yaml are enabled using --set for testing.
+//
+// Note: This test requires the following ldflags to be set per the
+// current Kubernetes version for avoiding false positive results.
+// Use `make test-unit` to check this correctly.
+// 1. -X helm.sh/helm/v3/pkg/lint/rules.k8sVersionMajor=<k8s-major-version>
+// 2. -X helm.sh/helm/v3/pkg/lint/rules.k8sVersionMinor=<k8s-minor-version>
+func TestHelmCreateChart_CheckDeprecatedWarnings(t *testing.T) {
+	createdChart, err := chartutil.Create("checkdeprecatedwarnings", t.TempDir())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	// Add values to enable hpa, and ingress which are disabled by default.
+	// helm lint checkdeprecatedwarnings --set 'autoscaling.enabled=true,ingress.enabled=true'
+	updatedValues := map[string]interface{}{
+		"autoscaling": map[string]interface{}{
+			"enabled": true,
+		},
+		"ingress": map[string]interface{}{
+			"enabled": true,
+		},
+	}
+
+	linterRunDetails := All(createdChart, updatedValues, namespace, true)
+	for _, msg := range linterRunDetails.Messages {
+		if strings.HasPrefix(msg.Error(), "[WARNING]") &&
+			strings.Contains(msg.Error(), "deprecated") {
+			// When there is a deprecation warning for an object created
+			// by `helm create` for the current Kubernetes version, fail.
+			t.Errorf("Unexpected deprecation warning for %q", msg.Path)
+		}
+	}
+}
+
 // lint ignores import-values
 // See https://github.com/helm/helm/issues/9658
 func TestSubChartValuesChart(t *testing.T) {
